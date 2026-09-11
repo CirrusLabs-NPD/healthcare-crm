@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scheduling UI — Design Tokens Reference (S-3)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/css/custom.css" rel="stylesheet">
+  <link href="/css/scheduling.css" rel="stylesheet">
+  <style>
+    /* preview page chrome only — NOT part of the token system */
+    body { padding: 0 0 4rem; }
+    .ref-head { position: sticky; top: 0; z-index: 20; background: var(--bs-bg-panel);
+      border-bottom: 1px solid var(--bs-border-color); padding: var(--sch-space-4) var(--sch-space-6);
+      display: flex; align-items: center; gap: var(--sch-space-4); box-shadow: var(--sch-elev-1); }
+    .ref-wrap { max-width: 1200px; margin: 0 auto; padding: 0 var(--sch-space-6); }
+    .ref-section { margin-top: var(--sch-space-8); }
+    .ref-section > h2 { font-size: var(--sch-fs-h3); font-weight: 600;
+      padding-bottom: var(--sch-space-2); border-bottom: 1px solid var(--bs-border-color);
+      margin-bottom: var(--sch-space-4); }
+    .ref-swatch { border-radius: var(--sch-radius); height: 56px; border: 1px solid var(--bs-border-color); }
+    .ref-cap { font-size: var(--sch-fs-caption); color: var(--bs-body-color-muted); }
+  </style>
+</head>
+<body class="admin-layout">
+  <div class="ref-head">
+    <strong style="color:var(--bs-primary)"><i class="bi bi-calendar3 me-1"></i>Scheduling UI — Token Reference</strong>
+    <span class="ref-cap">S-3 · extends the Soft-Blue Calm Admin system</span>
+    <span style="flex:1"></span>
+    <button id="themeToggle" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-moon-stars me-1"></i> Toggle theme
+    </button>
+  </div>
+  <div class="ref-wrap">
+    <!-- PALETTE -->
+    <section class="ref-section">
+      <h2>Palette — both themes read the same tokens</h2>
+      <div class="row g-3">
+        <div class="col-6 col-md-2"><div class="ref-swatch" style="background:var(--bs-primary)"></div><div class="ref-cap mt-1">Primary</div></div>
+        <div class="col-6 col-md-2"><div class="ref-swatch" style="background:var(--bs-accent)"></div><div class="ref-cap mt-1">Accent (focus)</div></div>
+        <div class="col-6 col-md-2"><div class="ref-swatch" style="background:var(--bs-success)"></div><div class="ref-cap mt-1">Success</div></div>
+        <div class="col-6 col-md-2"><div class="ref-swatch" style="background:var(--bs-warning)"></div><div class="ref-cap mt-1">Warning</div></div>
+        <div class="col-6 col-md-2"><div class="ref-swatch" style="background:var(--bs-danger)"></div><div class="ref-cap mt-1">Danger</div></div>
+        <div class="col-6 col-md-2"><div class="ref-swatch" style="background:var(--bs-info)"></div><div class="ref-cap mt-1">Info</div></div>
+      </div>
+    </section>
+
+    <!-- TYPE -->
+    <section class="ref-section">
+      <h2>Type scale — Inter · 32/24/20/16/14/12</h2>
+      <div style="font-size:var(--sch-fs-h1);font-weight:600">Wednesday, 16 September</div>
+      <div style="font-size:var(--sch-fs-h2);font-weight:600">Provider availability</div>
+      <div style="font-size:var(--sch-fs-h3);font-weight:600">Repeat weekly</div>
+      <div style="font-size:var(--sch-fs-body)">Body — appointment description and form labels.</div>
+      <div style="font-size:var(--sch-fs-small);color:var(--bs-body-color-muted)">Secondary — 9:00–9:30 · Dr. Adeyemi</div>
+      <div style="font-size:var(--sch-fs-caption);color:var(--bs-body-color-muted)">Caption — 12px grid gutter times & meta</div>
+    </section>
+
+    <!-- LEGEND -->
+    <section class="ref-section">
+      <h2>Appointment states</h2>
+      <div class="sch-legend">
+        <span class="sch-legend__item"><span class="sch-chip"></span> Scheduled</span>
+        <span class="sch-legend__item"><span class="sch-chip sch-chip--progress"></span> In progress</span>
+        <span class="sch-legend__item"><span class="sch-chip sch-chip--completed"></span> Completed</span>
+        <span class="sch-legend__item"><span class="sch-chip sch-chip--cancelled"></span> Cancelled</span>
+        <span class="sch-legend__item"><span class="sch-chip sch-chip--conflict"></span> Conflict (flagged)</span>
+        <span class="sch-legend__item"><span class="sch-deadline">Deadline</span></span>
+      </div>
+    </section>
+
+    <!-- DAY VIEW -->
+    <section class="ref-section">
+      <div class="sch-toolbar">
+        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-chevron-left"></i></button>
+        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-chevron-right"></i></button>
+        <h1 class="sch-toolbar__title">Wed, 16 Sep 2026</h1>
+        <span class="sch-toolbar__spacer"></span>
+        <div class="sch-viewswitch">
+          <button aria-pressed="true">Day</button>
+          <button aria-pressed="false">Week</button>
+        </div>
+        <button class="btn btn-primary btn-sm"><i class="bi bi-plus-circle-fill me-1"></i> New appointment</button>
+      </div>
+      <div class="sch-calendar">
+        <div class="sch-grid sch-grid--day">
+          <div class="sch-grid__corner"></div>
+          <div class="sch-grid__dayhead is-today"><div class="dow">Wed</div><div class="dom">16</div></div>
+          <div class="sch-grid__gutter">
+            <div class="sch-grid__hour">8 AM</div><div class="sch-grid__hour">9 AM</div>
+            <div class="sch-grid__hour">10 AM</div><div class="sch-grid__hour">11 AM</div>
+            <div class="sch-grid__hour">12 PM</div><div class="sch-grid__hour">1 PM</div>
+          </div>
+          <div class="sch-grid__col is-today" style="position:relative">
+            <!-- availability wash 9–12 & 1–2 -->
+            <div class="sch-avail" style="top:48px;height:144px"></div>
+            <div class="sch-avail" style="top:240px;height:48px"></div>
+            <div class="sch-unavail" style="top:0;height:48px"></div>
+            <div class="sch-exception" style="top:192px;height:48px"></div>
+            <div class="sch-grid__slot"></div><div class="sch-grid__slot"></div>
+            <div class="sch-grid__slot"></div><div class="sch-grid__slot"></div>
+            <div class="sch-grid__slot"></div><div class="sch-grid__slot"></div>
+            <!-- now line at ~9:20 -->
+            <div class="sch-nowline" style="top:64px"></div>
+            <!-- events -->
+            <div class="sch-event" style="top:52px;height:40px">
+              <span class="sch-event__flags"><i class="bi bi-arrow-repeat"></i></span>
+              <div class="sch-event__title">Follow-up · A. Okafor</div>
+              <div class="sch-event__time">9:00–9:30</div>
+            </div>
+            <div class="sch-event sch-event--progress" style="top:100px;height:56px">
+              <div class="sch-event__title">Consult · M. Rossi</div>
+              <div class="sch-event__time">9:45–10:30</div>
+            </div>
+            <div class="sch-event sch-event--conflict" style="top:158px;height:40px">
+              <span class="sch-event__flags"><i class="bi bi-exclamation-triangle-fill"></i></span>
+              <div class="sch-event__title">Double-booked · S. Khan</div>
+              <div class="sch-event__time">10:15–10:45</div>
+            </div>
+            <div class="sch-event sch-event--completed" style="top:244px;height:40px">
+              <div class="sch-event__title">Review · Completed</div>
+              <div class="sch-event__time">1:00–1:30</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="ref-cap mt-2">Green wash = provider bookable · hatched = off-hours · gold dashed = dated exception (PTO) · red line = now.</p>
+    </section>
+    <!-- RECURRENCE -->
+    <section class="ref-section">
+      <h2>Recurrence editor</h2>
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <div class="card"><div class="card-body sch-recur">
+            <div>
+              <label class="form-label">Repeats</label>
+              <select class="form-select" style="max-width:220px">
+                <option>Weekly</option><option>Daily</option><option>Every 2 weeks</option><option>Monthly</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">On these days</label>
+              <div class="sch-recur__weekdays">
+                <button class="sch-recur__day" aria-pressed="false">S</button>
+                <button class="sch-recur__day" aria-pressed="true">M</button>
+                <button class="sch-recur__day" aria-pressed="false">T</button>
+                <button class="sch-recur__day" aria-pressed="true">W</button>
+                <button class="sch-recur__day" aria-pressed="false">T</button>
+                <button class="sch-recur__day" aria-pressed="true">F</button>
+                <button class="sch-recur__day" aria-pressed="false">S</button>
+              </div>
+            </div>
+            <div>
+              <label class="form-label">Ends</label>
+              <input type="date" class="form-control" style="max-width:220px" value="2026-12-18">
+            </div>
+            <div class="sch-recur__summary">
+              <i class="bi bi-arrow-repeat me-1"></i> Every week on <strong>Mon, Wed, Fri</strong> until 18 Dec 2026 — about <strong>40 appointments</strong>.
+            </div>
+          </div></div>
+        </div>
+        <div class="col-lg-5">
+          <label class="form-label">Apply changes to</label>
+          <div class="sch-scope">
+            <label><input type="radio" name="scope" checked><span class="sch-scope__body"><strong>This appointment</strong><br><span class="ref-cap">Only 16 Sep changes.</span></span></label>
+            <label><input type="radio" name="scope"><span class="sch-scope__body"><strong>This and following</strong><br><span class="ref-cap">16 Sep onward in the series.</span></span></label>
+            <label><input type="radio" name="scope"><span class="sch-scope__body"><strong>The whole series</strong><br><span class="ref-cap">All 40 appointments.</span></span></label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AVAILABILITY -->
+    <section class="ref-section">
+      <h2>Provider availability</h2>
+      <div class="card"><div class="card-body">
+        <div class="sch-availrow"><span class="sch-availrow__day">Monday</span>
+          <span class="ref-cap">9:00 AM – 5:00 PM</span>
+          <span class="badge bg-success">Bookable</span></div>
+        <div class="sch-availrow"><span class="sch-availrow__day">Wednesday</span>
+          <span class="ref-cap">9:00 AM – 12:00 PM · 1:00 PM – 5:00 PM</span>
+          <span class="badge bg-success">Bookable</span></div>
+        <div class="sch-availrow is-off"><span class="sch-availrow__day">Saturday</span>
+          <span class="ref-cap">Not available</span>
+          <span class="badge bg-secondary">Off</span></div>
+      </div></div>
+    </section>
+
+    <!-- STATES -->
+    <section class="ref-section">
+      <h2>Every state is designed</h2>
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="card"><div class="card-body">
+            <div class="ref-cap mb-2">Loading — skeleton in the final layout</div>
+            <div class="sch-skeleton mb-2" style="height:16px;width:40%"></div>
+            <div class="sch-skeleton mb-2" style="height:40px"></div>
+            <div class="sch-skeleton" style="height:40px"></div>
+          </div></div>
+        </div>
+        <div class="col-md-6">
+          <div class="card"><div class="card-body">
+            <div class="sch-empty">
+              <i class="bi bi-calendar-plus"></i>
+              <div class="sch-empty__title">No appointments this day</div>
+              <div class="ref-cap">This provider has no bookings on 16 Sep.</div>
+              <button class="btn btn-primary btn-sm mt-3"><i class="bi bi-plus-circle-fill me-1"></i> New appointment</button>
+            </div>
+          </div></div>
+        </div>
+        <div class="col-12">
+          <div class="alert alert-danger d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <div>That slot overlaps an existing appointment for Dr. Adeyemi. Pick another time, or book anyway and flag it as a conflict.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!--MORE-->
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+  <script>
+    const html = document.documentElement;
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      html.setAttribute('data-bs-theme', html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
+    });
+  </script>
+</body>
+</html>
