@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/layout}">
+<head>
+    <title>Calendar</title>
+</head>
+<body class="admin-layout">
+<th:block layout:fragment="page-title">Calendar</th:block>
+
+<div layout:fragment="content" class="admin-calendar-page">
+
+    <!-- Provider picker + toolbar ------------------------------------------------ -->
+    <div class="sch-toolbar" role="toolbar" aria-label="Calendar controls">
+        <div class="d-flex align-items-center gap-2">
+            <label for="providerSelect" class="form-label mb-0 text-nowrap">Provider</label>
+            <select id="providerSelect" class="form-select form-select-sm" style="min-width: 200px;"
+                    aria-label="Select provider">
+                <option th:if="${#lists.isEmpty(providers)}" value="" disabled selected>
+                    No bookable providers
+                </option>
+                <option th:each="p : ${providers}" th:value="${p.id}" th:text="${p.name}">Provider name</option>
+            </select>
+        </div>
+
+        <div class="d-flex align-items-center gap-1">
+            <button type="button" id="btnPrev" class="btn btn-sm btn-outline-primary"
+                    aria-label="Previous period"><i class="bi bi-chevron-left"></i></button>
+            <button type="button" id="btnToday" class="btn btn-sm btn-outline-primary">Today</button>
+            <button type="button" id="btnNext" class="btn btn-sm btn-outline-primary"
+                    aria-label="Next period"><i class="bi bi-chevron-right"></i></button>
+        </div>
+
+        <h1 class="sch-toolbar__title" id="rangeTitle" aria-live="polite">&nbsp;</h1>
+
+        <span class="sch-toolbar__spacer"></span>
+
+        <div class="sch-viewswitch" role="group" aria-label="View">
+            <button type="button" id="viewDay" aria-pressed="false">Day</button>
+            <button type="button" id="viewWeek" aria-pressed="true">Week</button>
+        </div>
+
+        <button type="button" id="btnManageAvail" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-clock-history me-1"></i> Availability
+        </button>
+        <button type="button" id="btnNew" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle-fill me-1"></i> New appointment
+        </button>
+    </div>
+
+    <!-- Legend -------------------------------------------------------------------- -->
+    <div class="sch-legend mb-3" aria-hidden="true">
+        <span class="sch-legend__item"><span class="sch-chip"></span> Scheduled</span>
+        <span class="sch-legend__item"><span class="sch-chip sch-chip--progress"></span> In progress</span>
+        <span class="sch-legend__item"><span class="sch-chip sch-chip--completed"></span> Completed</span>
+        <span class="sch-legend__item"><span class="sch-chip sch-chip--cancelled"></span> Cancelled</span>
+        <span class="sch-legend__item"><span class="sch-chip sch-chip--conflict"></span> Conflict (flagged)</span>
+    </div>
+
+    <!-- Inline error banner (load failure / conflict) ---------------------------- -->
+    <div id="schError" class="alert alert-danger alert-dismissible fade show d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span id="schErrorText">Something went wrong.</span>
+        <button type="button" class="btn-close" aria-label="Close"
+                onclick="this.parentElement.classList.add('d-none')"></button>
+    </div>
+
+    <!-- Loading skeleton (shown while a range is fetched) ------------------------ -->
+    <div id="schLoading" class="sch-calendar d-none" aria-hidden="true">
+        <div class="p-3">
+            <div class="sch-skeleton mb-3" style="height:16px;width:30%"></div>
+            <div class="sch-skeleton mb-2" style="height:44px"></div>
+            <div class="sch-skeleton mb-2" style="height:44px"></div>
+            <div class="sch-skeleton mb-2" style="height:44px"></div>
+            <div class="sch-skeleton mb-2" style="height:44px"></div>
+            <div class="sch-skeleton" style="height:44px"></div>
+        </div>
+    </div>
+
+    <!-- Empty state (no provider, or no bookings in range) ----------------------- -->
+    <div id="schEmpty" class="sch-calendar d-none">
+        <div class="sch-empty">
+            <i class="bi bi-calendar-x" aria-hidden="true"></i>
+            <div class="sch-empty__title" id="schEmptyTitle">No appointments</div>
+            <p class="mb-3" id="schEmptyBody">This provider has no bookings in this period.</p>
+            <button type="button" class="btn btn-primary btn-sm" data-sch-new>
+                <i class="bi bi-plus-circle-fill me-1"></i> New appointment
+            </button>
+        </div>
+    </div>
+
+    <!-- The calendar grid — day OR week; built by scheduling.js ------------------- -->
+    <div id="schCalendar" class="sch-calendar" aria-label="Appointment calendar" role="grid" tabindex="0"></div>
+
+    <!-- ============================ APPOINTMENT MODAL ============================ -->
+    <div class="modal fade" id="apptModal" tabindex="-1" aria-labelledby="apptModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <form id="apptForm" novalidate>
+            <div class="modal-header">
+              <h2 class="modal-title h5" id="apptModalTitle">New appointment</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="apptId">
+
+              <!-- Conflict / validation banner, inline and recoverable -->
+              <div id="apptError" class="alert alert-danger d-none" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="apptErrorText"></span>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label d-block">Type</label>
+                <div class="btn-group" role="group" aria-label="Appointment type">
+                  <input type="radio" class="btn-check" name="apptType" id="typeAppt" value="APPOINTMENT" checked>
+                  <label class="btn btn-outline-primary btn-sm" for="typeAppt">Appointment</label>
+                  <input type="radio" class="btn-check" name="apptType" id="typeDeadline" value="DEADLINE">
+                  <label class="btn btn-outline-primary btn-sm" for="typeDeadline">Deadline</label>
+                </div>
+                <div class="form-text">A deadline is a marker with no duration; it never blocks a provider's time.</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="apptTitle" class="form-label">Title</label>
+                <input type="text" class="form-control" id="apptTitle" maxlength="150" required>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="apptCustomer" class="form-label">Customer</label>
+                  <select class="form-select" id="apptCustomer" required>
+                    <option value="" selected disabled>Select a customer…</option>
+                    <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.name}">Customer</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label for="apptProvider" class="form-label">Provider</label>
+                  <select class="form-select" id="apptProvider" required>
+                    <option value="" selected disabled>Select a provider…</option>
+                    <option th:each="p : ${providers}" th:value="${p.id}" th:text="${p.name}">Provider</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-3 mt-0">
+                <div class="col-md-6">
+                  <label for="apptStart" class="form-label">Starts</label>
+                  <input type="datetime-local" class="form-control" id="apptStart" required>
+                </div>
+                <div class="col-md-6" data-appt-end-wrap>
+                  <label for="apptEnd" class="form-label">Ends</label>
+                  <input type="datetime-local" class="form-control" id="apptEnd" required>
+                </div>
+              </div>
+
+              <div class="row g-3 mt-0">
+                <div class="col-md-6">
+                  <label for="apptPriority" class="form-label">Priority</label>
+                  <select class="form-select" id="apptPriority">
+                    <option>Low</option><option selected>Medium</option><option>High</option>
+                  </select>
+                </div>
+                <div class="col-md-6" data-appt-status-wrap>
+                  <label for="apptStatus" class="form-label">Status</label>
+                  <select class="form-select" id="apptStatus">
+                    <option>Pending</option><option>In Progress</option>
+                    <option>Completed</option><option>Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="mb-3 mt-3">
+                <label for="apptDesc" class="form-label">Description</label>
+                <textarea class="form-control" id="apptDesc" rows="2" maxlength="2000" required></textarea>
+              </div>
+
+              <!-- ---- Recurrence (new appointments only) ---- -->
+              <div class="border-top pt-3 mt-2" data-recur-toggle-wrap>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" role="switch" id="apptRepeat">
+                  <label class="form-check-label" for="apptRepeat">
+                    <i class="bi bi-arrow-repeat me-1"></i> Repeat this appointment
+                  </label>
+                </div>
+              </div>
+
+              <div id="recurEditor" class="sch-recur mt-3 d-none">
+                <div class="row g-3">
+                  <div class="col-md-5">
+                    <label for="recurFreq" class="form-label">Repeats</label>
+                    <select id="recurFreq" class="form-select">
+                      <option value="DAILY">Daily</option>
+                      <option value="WEEKLY" selected>Weekly</option>
+                      <option value="MONTHLY">Monthly</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="recurInterval" class="form-label">Every</label>
+                    <div class="input-group">
+                      <input type="number" id="recurInterval" class="form-control" min="1" value="1">
+                      <span class="input-group-text" id="recurIntervalUnit">weeks</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div data-recur-weekdays-wrap>
+                  <label class="form-label" id="recurDaysLabel">On these days</label>
+                  <div class="sch-recur__weekdays" role="group" aria-labelledby="recurDaysLabel">
+                    <button type="button" class="sch-recur__day" data-dow="7" aria-pressed="false" aria-label="Sunday">S</button>
+                    <button type="button" class="sch-recur__day" data-dow="1" aria-pressed="false" aria-label="Monday">M</button>
+                    <button type="button" class="sch-recur__day" data-dow="2" aria-pressed="false" aria-label="Tuesday">T</button>
+                    <button type="button" class="sch-recur__day" data-dow="3" aria-pressed="false" aria-label="Wednesday">W</button>
+                    <button type="button" class="sch-recur__day" data-dow="4" aria-pressed="false" aria-label="Thursday">T</button>
+                    <button type="button" class="sch-recur__day" data-dow="5" aria-pressed="false" aria-label="Friday">F</button>
+                    <button type="button" class="sch-recur__day" data-dow="6" aria-pressed="false" aria-label="Saturday">S</button>
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-5">
+                    <label class="form-label d-block">Ends</label>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="End condition">
+                      <input type="radio" class="btn-check" name="recurEnd" id="endOnDate" value="date" checked>
+                      <label class="btn btn-outline-primary" for="endOnDate">On date</label>
+                      <input type="radio" class="btn-check" name="recurEnd" id="endAfter" value="count">
+                      <label class="btn btn-outline-primary" for="endAfter">After N</label>
+                    </div>
+                  </div>
+                  <div class="col-md-4" data-recur-until-wrap>
+                    <label for="recurUntil" class="form-label">Until</label>
+                    <input type="date" id="recurUntil" class="form-control">
+                  </div>
+                  <div class="col-md-4 d-none" data-recur-count-wrap>
+                    <label for="recurCount" class="form-label">Occurrences</label>
+                    <input type="number" id="recurCount" class="form-control" min="1" value="10">
+                  </div>
+                </div>
+
+                <div class="sch-recur__summary" id="recurSummary" aria-live="polite">
+                  <i class="bi bi-arrow-repeat me-1"></i> Pick the days and an end to preview the series.
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary" id="apptSave">
+                <span class="spinner-border spinner-border-sm me-1 d-none" id="apptSaveSpin" role="status" aria-hidden="true"></span>
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== EDIT SCOPE MODAL (series occurrence) ===================== -->
+    <div class="modal fade" id="scopeModal" tabindex="-1" aria-labelledby="scopeModalTitle" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="scopeModalTitle">This is a repeating appointment</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label">Apply changes to</label>
+            <div class="sch-scope">
+              <label><input type="radio" name="scope" value="one" checked>
+                <span class="sch-scope__body"><strong>This appointment</strong><br>
+                <span class="form-text">Only the selected occurrence changes.</span></span></label>
+              <label><input type="radio" name="scope" value="following">
+                <span class="sch-scope__body"><strong>This and following</strong><br>
+                <span class="form-text">This occurrence and every later one in the series.</span></span></label>
+              <label><input type="radio" name="scope" value="all">
+                <span class="sch-scope__body"><strong>The whole series</strong><br>
+                <span class="form-text">Every appointment in the series.</span></span></label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="scopeConfirm">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== AVAILABILITY MODAL ===================== -->
+    <div class="modal fade" id="availModal" tabindex="-1" aria-labelledby="availModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="availModalTitle">Provider availability</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="availError" class="alert alert-danger d-none" role="alert">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i><span id="availErrorText"></span>
+            </div>
+
+            <h3 class="h6 text-muted">Weekly hours</h3>
+            <div id="availRules" aria-live="polite">
+              <!-- rows injected by scheduling.js; skeleton while loading -->
+            </div>
+
+            <form id="ruleForm" class="row g-2 align-items-end mt-2">
+              <div class="col-sm-4">
+                <label for="ruleDay" class="form-label">Day</label>
+                <select id="ruleDay" class="form-select form-select-sm">
+                  <option value="MONDAY">Monday</option><option value="TUESDAY">Tuesday</option>
+                  <option value="WEDNESDAY">Wednesday</option><option value="THURSDAY">Thursday</option>
+                  <option value="FRIDAY">Friday</option><option value="SATURDAY">Saturday</option>
+                  <option value="SUNDAY">Sunday</option>
+                </select>
+              </div>
+              <div class="col-sm-3">
+                <label for="ruleStart" class="form-label">From</label>
+                <input type="time" id="ruleStart" class="form-control form-control-sm" value="09:00">
+              </div>
+              <div class="col-sm-3">
+                <label for="ruleEnd" class="form-label">To</label>
+                <input type="time" id="ruleEnd" class="form-control form-control-sm" value="17:00">
+              </div>
+              <div class="col-sm-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Add</button>
+              </div>
+            </form>
+
+            <h3 class="h6 text-muted mt-4">Dated exceptions</h3>
+            <div id="availExceptions" aria-live="polite"></div>
+            <form id="exceptionForm" class="row g-2 align-items-end mt-2">
+              <div class="col-sm-4">
+                <label for="excDate" class="form-label">Date</label>
+                <input type="date" id="excDate" class="form-control form-control-sm">
+              </div>
+              <div class="col-sm-4">
+                <label for="excKind" class="form-label">Kind</label>
+                <select id="excKind" class="form-select form-select-sm">
+                  <option value="off" selected>Time off (whole day)</option>
+                  <option value="extra">Extra hours</option>
+                </select>
+              </div>
+              <div class="col-sm-2 d-none" data-exc-times>
+                <label for="excStart" class="form-label">From</label>
+                <input type="time" id="excStart" class="form-control form-control-sm">
+              </div>
+              <div class="col-sm-2 d-none" data-exc-times>
+                <label for="excEnd" class="form-label">To</label>
+                <input type="time" id="excEnd" class="form-control form-control-sm">
+              </div>
+              <div class="col-sm-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Add</button>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== SUCCESS TOAST ===================== -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+      <div id="schToast" class="toast align-items-center border-0" role="status" aria-live="polite" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body"><i class="bi bi-check-circle-fill text-success me-2"></i><span id="schToastText">Saved.</span></div>
+          <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- The calendar JS reads and writes through the /api/* endpoints S-4 exposes. -->
+    <script th:src="@{/js/scheduling.js}"></script>
+</div>
+</body>
+</html>

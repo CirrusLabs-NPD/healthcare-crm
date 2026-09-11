@@ -1,0 +1,322 @@
+/* =====================================================================
+   scheduling.css  —  Design tokens & components for the Scheduling UI
+   Owner: S-3 (Design direction). Extends the existing "Soft-Blue Calm
+   Admin" system defined in custom.css. Every scheduling screen (calendar
+   day/week, availability, recurrence editor) reads ONLY these tokens.
+   NO literal colour / px / radius belongs in a scheduling template.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. SCHEDULING TOKENS (light)  — layered on top of custom.css :root
+   All hues resolve to the app palette; nothing new is invented that the
+   base system does not already own. Only the calendar grid, the four
+   appointment states, availability shading and recurrence get new tokens.
+   --------------------------------------------------------------------- */
+:root {
+  /* Spacing scale (4px base) — use these, never ad-hoc gaps */
+  --sch-space-1: 0.25rem;   /*  4px */
+  --sch-space-2: 0.5rem;    /*  8px */
+  --sch-space-3: 0.75rem;   /* 12px */
+  --sch-space-4: 1rem;      /* 16px */
+  --sch-space-6: 1.5rem;    /* 24px */
+  --sch-space-8: 2rem;      /* 32px */
+
+  /* Type scale (12 / 14 / 16 / 20 / 24 / 32) */
+  --sch-fs-caption: 0.75rem;   /* 12px — grid gutter times, meta */
+  --sch-fs-small:   0.875rem;  /* 14px — event body, secondary */
+  --sch-fs-body:    1rem;      /* 16px — default */
+  --sch-fs-h3:      1.25rem;   /* 20px */
+  --sch-fs-h2:      1.5rem;    /* 24px */
+  --sch-fs-h1:      2rem;      /* 32px — calendar title */
+
+  /* Radii & elevation reuse the base system's two radii + three levels */
+  --sch-radius:    var(--bs-border-radius);      /* 0.375rem — events, chips */
+  --sch-radius-lg: var(--bs-border-radius-lg);   /* 0.5rem  — panels */
+  --sch-elev-1: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --sch-elev-2: 0 4px 12px rgba(16, 24, 40, 0.10);
+  --sch-elev-3: 0 12px 28px rgba(16, 24, 40, 0.16);
+
+  /* Motion — one duration, one easing; honoured by prefers-reduced-motion */
+  --sch-motion-fast: 150ms;
+  --sch-motion:      200ms;
+  --sch-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Calendar grid */
+  --sch-grid-line:        rgba(16, 24, 40, 0.08);   /* hairline dividers */
+  --sch-grid-line-strong: rgba(16, 24, 40, 0.16);   /* day separators */
+  --sch-grid-surface:     var(--bs-bg-panel);       /* #fff time area */
+  --sch-grid-gutter-bg:   var(--bs-bg-light);       /* time-of-day column */
+  --sch-grid-hour-h:      48px;                     /* height of one hour row */
+  --sch-grid-time-w:      64px;                     /* time gutter width */
+  --sch-now-line:         var(--bs-danger);         /* "current time" marker */
+  --sch-today-tint:       rgba(86, 119, 164, 0.05); /* today's column wash */
+
+  /* Availability shading (behind the grid, never competes with events) */
+  --sch-avail-bg:      rgba(25, 135, 84, 0.08);     /* provider is bookable */
+  --sch-avail-border:  rgba(25, 135, 84, 0.24);
+  --sch-unavail-bg:    repeating-linear-gradient(   /* off / blocked hours */
+                         45deg,
+                         rgba(16, 24, 40, 0.03),
+                         rgba(16, 24, 40, 0.03) 6px,
+                         rgba(16, 24, 40, 0.06) 6px,
+                         rgba(16, 24, 40, 0.06) 12px);
+  --sch-exception-bg:  rgba(253, 184, 19, 0.12);    /* dated exception (PTO) */
+  --sch-exception-bd:  rgba(253, 184, 19, 0.45);
+
+  /* ---- Appointment status tokens (the four business states) ----
+     Each state = a fill, a left accent bar and readable text. States mirror
+     the S-2 model: Scheduled, In progress, Completed, Cancelled, plus the
+     cross-cutting Conflict flag (conflicts are flagged, never dropped). */
+  --sch-appt-scheduled-bg:   #eaf0f8;  --sch-appt-scheduled-bar: var(--bs-primary);      --sch-appt-scheduled-fg: #1f3a5f;
+  --sch-appt-progress-bg:    #e6f6fb;  --sch-appt-progress-bar:  var(--bs-info);         --sch-appt-progress-fg:  #0b5566;
+  --sch-appt-completed-bg:   #e8f4ee;  --sch-appt-completed-bar: var(--bs-success);      --sch-appt-completed-fg: #14603b;
+  --sch-appt-cancelled-bg:   #f1f2f4;  --sch-appt-cancelled-bar: var(--bs-secondary);    --sch-appt-cancelled-fg: #565e64;
+  --sch-appt-conflict-bg:    #fdecec;  --sch-appt-conflict-bar:  var(--bs-danger);       --sch-appt-conflict-fg:  #8a1c1c;
+
+  /* Deadline (type=DEADLINE) — a marker, not a timed block */
+  --sch-deadline-fg:  var(--bs-body-color);
+  --sch-deadline-dot: var(--bs-accent);
+}
+
+/* ---------------------------------------------------------------------
+   2. DARK THEME  — the base app ships NO dark tokens. Scheduling defines
+   its own, opt-in via [data-bs-theme="dark"] on <html>. Depth comes from
+   lighter surfaces, not heavier shadows; every state re-checked for ≥4.5:1.
+   --------------------------------------------------------------------- */
+[data-bs-theme="dark"] {
+  --bs-primary: #8aadd1;
+  --bs-primary-light: #a9c4e0;
+  --bs-accent: #fdb813;
+  --bs-bg-light: #0f151d;         /* app background (slate-950-ish) */
+  --bs-bg-panel: #182230;         /* raised surface */
+  --bs-border-color: #2a3648;
+  --bs-body-color: #e6ebf2;
+  --bs-body-color-muted: #94a2b8;
+
+  --sch-grid-line:        rgba(230, 235, 242, 0.08);
+  --sch-grid-line-strong: rgba(230, 235, 242, 0.16);
+  --sch-grid-surface:     var(--bs-bg-panel);
+  --sch-grid-gutter-bg:   #121a24;
+  --sch-now-line:         #ff6b6b;
+  --sch-today-tint:       rgba(138, 173, 209, 0.10);
+
+  --sch-avail-bg:     rgba(46, 196, 133, 0.12);
+  --sch-avail-border: rgba(46, 196, 133, 0.30);
+  --sch-unavail-bg:   repeating-linear-gradient(45deg,
+                        rgba(230,235,242,0.02), rgba(230,235,242,0.02) 6px,
+                        rgba(230,235,242,0.05) 6px, rgba(230,235,242,0.05) 12px);
+  --sch-exception-bg: rgba(253, 184, 19, 0.14);
+  --sch-exception-bd: rgba(253, 184, 19, 0.50);
+
+  --sch-appt-scheduled-bg:  #1d3350;  --sch-appt-scheduled-bar: #8aadd1; --sch-appt-scheduled-fg: #cfe0f5;
+  --sch-appt-progress-bg:   #103a45;  --sch-appt-progress-bar:  #4dd3ec; --sch-appt-progress-fg:  #b6ecf7;
+  --sch-appt-completed-bg:  #123a2a;  --sch-appt-completed-bar: #38c58a; --sch-appt-completed-fg: #b6ecd2;
+  --sch-appt-cancelled-bg:  #232b36;  --sch-appt-cancelled-bar: #7a8797; --sch-appt-cancelled-fg: #aeb8c6;
+  --sch-appt-conflict-bg:   #46201f;  --sch-appt-conflict-bar:  #ff6b6b; --sch-appt-conflict-fg:  #ffc9c6;
+
+  --sch-elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sch-elev-2: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --sch-elev-3: 0 12px 28px rgba(0, 0, 0, 0.6);
+
+  --sch-deadline-fg: var(--bs-body-color);
+}
+
+/* Keep the app chrome coherent in dark (base custom.css only knew light) */
+[data-bs-theme="dark"] body { background-color: var(--bs-bg-light); color: var(--bs-body-color); }
+[data-bs-theme="dark"] .header,
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .table { --bs-table-bg: var(--bs-bg-panel); }
+
+/* =====================================================================
+   3. COMPONENTS — assembled ONLY from the tokens above.
+   ===================================================================== */
+
+/* ---- 3.1 Calendar toolbar ---- */
+.sch-toolbar {
+  display: flex; align-items: center; gap: var(--sch-space-3);
+  flex-wrap: wrap; margin-bottom: var(--sch-space-4);
+}
+.sch-toolbar__title {
+  font-size: var(--sch-fs-h2); font-weight: 600; margin: 0;
+  color: var(--bs-body-color);
+}
+.sch-toolbar__spacer { flex: 1 1 auto; }
+/* Day/Week segmented control — a real control, never browser default */
+.sch-viewswitch { display: inline-flex; border: 1px solid var(--bs-border-color);
+  border-radius: var(--sch-radius); overflow: hidden; background: var(--bs-bg-panel); }
+.sch-viewswitch button {
+  border: 0; background: transparent; padding: var(--sch-space-2) var(--sch-space-4);
+  font-size: var(--sch-fs-small); font-weight: 500; color: var(--bs-body-color-muted);
+  cursor: pointer; transition: background var(--sch-motion-fast) var(--sch-ease),
+    color var(--sch-motion-fast) var(--sch-ease);
+}
+.sch-viewswitch button + button { border-left: 1px solid var(--bs-border-color); }
+.sch-viewswitch button:hover { background: var(--sch-today-tint); color: var(--bs-body-color); }
+.sch-viewswitch button[aria-pressed="true"] {
+  background: var(--bs-primary); color: #fff;
+}
+[data-bs-theme="dark"] .sch-viewswitch button[aria-pressed="true"] { color: #0f151d; }
+
+/* ---- 3.2 Calendar grid (day / week) ---- */
+.sch-calendar {
+  background: var(--sch-grid-surface);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--sch-radius-lg);
+  box-shadow: var(--sch-elev-1);
+  overflow: hidden;
+}
+.sch-grid { display: grid; }
+.sch-grid--day  { grid-template-columns: var(--sch-grid-time-w) 1fr; }
+.sch-grid--week { grid-template-columns: var(--sch-grid-time-w) repeat(7, 1fr); }
+
+.sch-grid__corner { background: var(--sch-grid-gutter-bg);
+  border-bottom: 1px solid var(--sch-grid-line-strong);
+  border-right: 1px solid var(--sch-grid-line); }
+.sch-grid__dayhead {
+  padding: var(--sch-space-2); text-align: center;
+  border-bottom: 1px solid var(--sch-grid-line-strong);
+  border-right: 1px solid var(--sch-grid-line);
+  background: var(--sch-grid-surface);
+}
+.sch-grid__dayhead .dow  { font-size: var(--sch-fs-caption); text-transform: uppercase;
+  letter-spacing: .04em; color: var(--bs-body-color-muted); }
+.sch-grid__dayhead .dom  { font-size: var(--sch-fs-h3); font-weight: 600; line-height: 1.1; }
+.sch-grid__dayhead.is-today .dom {
+  color: #fff; background: var(--bs-primary);
+  border-radius: 50%; width: 32px; height: 32px; display: inline-flex;
+  align-items: center; justify-content: center; margin-top: 2px;
+}
+[data-bs-theme="dark"] .sch-grid__dayhead.is-today .dom { color: #0f151d; }
+
+/* time gutter + hour rows */
+.sch-grid__gutter { background: var(--sch-grid-gutter-bg);
+  border-right: 1px solid var(--sch-grid-line); }
+.sch-grid__hour {
+  height: var(--sch-grid-hour-h); position: relative;
+  border-bottom: 1px solid var(--sch-grid-line);
+  font-size: var(--sch-fs-caption); color: var(--bs-body-color-muted);
+  padding: 2px var(--sch-space-2) 0; text-align: right;
+}
+.sch-grid__col { position: relative; border-right: 1px solid var(--sch-grid-line); }
+.sch-grid__col.is-today { background: var(--sch-today-tint); }
+.sch-grid__slot { height: var(--sch-grid-hour-h); border-bottom: 1px solid var(--sch-grid-line); }
+
+/* availability wash + exceptions sit UNDER events */
+.sch-avail {
+  position: absolute; left: 0; right: 0;
+  background: var(--sch-avail-bg);
+  border-top: 1px solid var(--sch-avail-border);
+  border-bottom: 1px solid var(--sch-avail-border);
+}
+.sch-unavail { position: absolute; left: 0; right: 0; background: var(--sch-unavail-bg); }
+.sch-exception { position: absolute; left: 0; right: 0;
+  background: var(--sch-exception-bg); border: 1px dashed var(--sch-exception-bd); }
+
+/* "now" line */
+.sch-nowline { position: absolute; left: 0; right: 0; height: 0;
+  border-top: 2px solid var(--sch-now-line); z-index: 5; }
+.sch-nowline::before { content: ""; position: absolute; left: -4px; top: -4px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--sch-now-line); }
+
+/* ---- 3.3 Appointment event block ---- */
+.sch-event {
+  position: absolute; left: 4px; right: 4px;
+  border-radius: var(--sch-radius);
+  border-left: 3px solid var(--sch-appt-scheduled-bar);
+  background: var(--sch-appt-scheduled-bg);
+  color: var(--sch-appt-scheduled-fg);
+  padding: var(--sch-space-1) var(--sch-space-2);
+  font-size: var(--sch-fs-small); overflow: hidden; cursor: pointer;
+  transition: box-shadow var(--sch-motion-fast) var(--sch-ease),
+              transform var(--sch-motion-fast) var(--sch-ease);
+  z-index: 6;
+}
+.sch-event:hover { box-shadow: var(--sch-elev-2); z-index: 7; }
+.sch-event:focus-visible { outline: 2px solid var(--bs-accent); outline-offset: 2px; }
+.sch-event__time { font-size: var(--sch-fs-caption); opacity: .85; }
+.sch-event__title { font-weight: 600; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.sch-event__meta { font-size: var(--sch-fs-caption); opacity: .8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.sch-event--progress  { background: var(--sch-appt-progress-bg);  color: var(--sch-appt-progress-fg);  border-left-color: var(--sch-appt-progress-bar); }
+.sch-event--completed { background: var(--sch-appt-completed-bg); color: var(--sch-appt-completed-fg); border-left-color: var(--sch-appt-completed-bar); }
+.sch-event--cancelled { background: var(--sch-appt-cancelled-bg); color: var(--sch-appt-cancelled-fg); border-left-color: var(--sch-appt-cancelled-bar); }
+.sch-event--cancelled .sch-event__title { text-decoration: line-through; }
+.sch-event--conflict  { background: var(--sch-appt-conflict-bg);  color: var(--sch-appt-conflict-fg);  border-left-color: var(--sch-appt-conflict-bar); }
+
+/* recurrence + conflict markers on an event */
+.sch-event__flags { display: inline-flex; gap: var(--sch-space-1); float: right; }
+.sch-event__flags .bi { font-size: var(--sch-fs-caption); }
+
+/* deadline marker (all-day strip, not a timed block) */
+.sch-deadline {
+  display: inline-flex; align-items: center; gap: var(--sch-space-1);
+  font-size: var(--sch-fs-small); color: var(--sch-deadline-fg);
+}
+.sch-deadline::before { content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--sch-deadline-dot); display: inline-block; }
+
+/* ---- 3.4 Status legend chips ---- */
+.sch-legend { display: flex; flex-wrap: wrap; gap: var(--sch-space-3);
+  font-size: var(--sch-fs-small); color: var(--bs-body-color-muted); }
+.sch-legend__item { display: inline-flex; align-items: center; gap: var(--sch-space-2); }
+.sch-chip { width: 12px; height: 12px; border-radius: 3px;
+  border-left: 3px solid var(--sch-appt-scheduled-bar); background: var(--sch-appt-scheduled-bg); }
+.sch-chip--progress  { border-left-color: var(--sch-appt-progress-bar);  background: var(--sch-appt-progress-bg); }
+.sch-chip--completed { border-left-color: var(--sch-appt-completed-bar); background: var(--sch-appt-completed-bg); }
+.sch-chip--cancelled { border-left-color: var(--sch-appt-cancelled-bar); background: var(--sch-appt-cancelled-bg); }
+.sch-chip--conflict  { border-left-color: var(--sch-appt-conflict-bar);  background: var(--sch-appt-conflict-bg); }
+
+/* ---- 3.5 Availability editor rows ---- */
+.sch-availrow { display: grid; grid-template-columns: 120px 1fr auto;
+  align-items: center; gap: var(--sch-space-3);
+  padding: var(--sch-space-3) 0; border-bottom: 1px solid var(--sch-grid-line); }
+.sch-availrow__day { font-weight: 600; }
+.sch-availrow.is-off .sch-availrow__day { color: var(--bs-body-color-muted); }
+
+/* ---- 3.6 Recurrence editor ---- */
+.sch-recur { display: grid; gap: var(--sch-space-4); }
+.sch-recur__weekdays { display: inline-flex; gap: var(--sch-space-2); flex-wrap: wrap; }
+.sch-recur__day {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--bs-border-color); background: var(--bs-bg-panel);
+  color: var(--bs-body-color); font-size: var(--sch-fs-small); font-weight: 600;
+  cursor: pointer; transition: background var(--sch-motion-fast) var(--sch-ease),
+    color var(--sch-motion-fast) var(--sch-ease), border-color var(--sch-motion-fast) var(--sch-ease);
+}
+.sch-recur__day:hover { border-color: var(--bs-primary); }
+.sch-recur__day[aria-pressed="true"] { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
+[data-bs-theme="dark"] .sch-recur__day[aria-pressed="true"] { color: #0f151d; }
+.sch-recur__day:focus-visible { outline: 2px solid var(--bs-accent); outline-offset: 2px; }
+.sch-recur__summary {
+  padding: var(--sch-space-3) var(--sch-space-4);
+  background: var(--sch-today-tint); border-radius: var(--sch-radius);
+  font-size: var(--sch-fs-small);
+}
+
+/* Scope picker (this / this-and-following / whole series) */
+.sch-scope { display: grid; gap: var(--sch-space-2); }
+.sch-scope label { display: flex; gap: var(--sch-space-2); align-items: flex-start;
+  padding: var(--sch-space-3); border: 1px solid var(--bs-border-color);
+  border-radius: var(--sch-radius); cursor: pointer; }
+.sch-scope label:hover { border-color: var(--bs-primary); }
+.sch-scope input:checked + .sch-scope__body { color: var(--bs-body-color); }
+
+/* ---- 3.7 States: skeleton, empty, conflict banner ---- */
+.sch-skeleton { background: linear-gradient(90deg,
+  var(--sch-grid-line) 25%, var(--sch-grid-line-strong) 37%, var(--sch-grid-line) 63%);
+  background-size: 400% 100%; border-radius: var(--sch-radius);
+  animation: sch-shimmer 1.4s ease infinite; }
+@keyframes sch-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+.sch-empty { text-align: center; padding: var(--sch-space-8) var(--sch-space-4);
+  color: var(--bs-body-color-muted); }
+.sch-empty .bi { font-size: 2rem; color: var(--bs-primary); opacity: .6; }
+.sch-empty__title { font-weight: 600; color: var(--bs-body-color); margin-top: var(--sch-space-2); }
+
+/* ---- 3.8 Motion accessibility ---- */
+@media (prefers-reduced-motion: reduce) {
+  .sch-event, .sch-viewswitch button, .sch-recur__day, .sch-skeleton {
+    transition: none !important; animation: none !important;
+  }
+}
