@@ -1,5 +1,8 @@
 HELP.md
 target/
+
+### Scheduling UI preview scratch (offline render playground — never committed) ###
+.sch-preview/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
