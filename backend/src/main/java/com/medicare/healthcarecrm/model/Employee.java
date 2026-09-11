@@ -34,6 +34,17 @@ public class Employee {
     @Column(nullable = false)
     private String role;
 
+    // Whether this employee can be booked as a scheduling provider. Defaults true so
+    // existing rows remain bookable after the additive migration (ddl-auto=update).
+    @Builder.Default
+    @Column(name = "bookable_provider", nullable = false, columnDefinition = "boolean default true")
+    private boolean bookableProvider = true;
+
+    // Default slot length in minutes when booking against this provider.
+    @Builder.Default
+    @Column(name = "default_duration_min", nullable = false, columnDefinition = "int default 30")
+    private int defaultDurationMin = 30;
+
     @NotEmpty(message = "Email cannot be empty")
     @Email(message = "Email should be valid")
     @Column(unique = true, nullable = false)
