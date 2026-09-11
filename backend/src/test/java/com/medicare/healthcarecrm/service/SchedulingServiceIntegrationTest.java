@@ -278,13 +278,18 @@ class SchedulingServiceIntegrationTest {
     void editingOneOccurrenceDoesNotChangeTheOthers() {
         List<Appointment> generated = appointmentService.createSeries(weeklySeries(3, LocalTime.of(10, 0)), null);
         Appointment target = generated.get(1);
+        // Capture BEFORE rescheduling: target is a managed entity, so reschedule
+        // mutates this same instance in place — reading it back afterwards would
+        // return the new value, not the original.
+        LocalDateTime originalStart = target.getStartTime();
+        Long targetId = target.getId();
 
-        Appointment edited = appt(providerA, target.getStartTime().plusHours(2), target.getEndTime().plusHours(2));
+        Appointment edited = appt(providerA, originalStart.plusHours(2), target.getEndTime().plusHours(2));
         edited.setTitle("Rescheduled one");
-        appointmentService.reschedule(target.getId(), edited, null);
+        appointmentService.reschedule(targetId, edited, null);
 
-        Appointment reloaded = appointmentService.getAppointmentById(target.getId());
-        assertThat(reloaded.getStartTime()).isEqualTo(target.getStartTime().plusHours(2));
+        Appointment reloaded = appointmentService.getAppointmentById(targetId);
+        assertThat(reloaded.getStartTime()).isEqualTo(originalStart.plusHours(2));
         // The other two occurrences keep their original 10:00 start.
         assertThat(appointmentService.getAppointmentById(generated.get(0).getId()).getStartTime().toLocalTime())
                 .isEqualTo(LocalTime.of(10, 0));
