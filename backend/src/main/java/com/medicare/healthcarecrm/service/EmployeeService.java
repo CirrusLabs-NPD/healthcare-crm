@@ -82,6 +82,16 @@ public class EmployeeService {
                 .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
     }
 
+    /** Resolve an employee by their login email. Returns null when the caller is
+     *  not an employee (e.g. an admin), which the schedule guard treats as an
+     *  unrestricted admin context. */
+    public Employee getEmployeeByEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+        return employeeRepository.findByEmail(email);
+    }
+
     @Transactional
     public String deleteEmployee(Long id) {
         try {
