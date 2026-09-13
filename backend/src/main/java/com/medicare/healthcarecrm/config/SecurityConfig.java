@@ -50,6 +50,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/customers/**", "/api/employees/**", "/api/tasks/**").hasAnyRole("ADMIN", "EMPLOYEE")
                         .requestMatchers("/api/customers/**", "/api/employees/**", "/api/tasks/**").hasRole("ADMIN")
 
+                        // Scheduling API: both roles may read and write; ownership is enforced
+                        // server-side in the services (an employee only touches their own records).
+                        .requestMatchers("/api/appointments/**", "/api/appointment-series/**", "/api/availability/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
                         // --- Fallback Rule ---
                         .anyRequest().authenticated()
                 )
