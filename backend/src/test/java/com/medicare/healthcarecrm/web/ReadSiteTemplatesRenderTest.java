@@ -7,24 +7,20 @@ import com.medicare.healthcarecrm.model.Tasks;
 import com.medicare.healthcarecrm.repository.CustomerRepository;
 import com.medicare.healthcarecrm.repository.EmployeeRepository;
 import com.medicare.healthcarecrm.repository.TasksRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -45,12 +41,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * return HTTP 500; asserting 200 plus the presence of the formatted timestamp proves
  * the reference still resolves.
  *
- * <p>Security filters are disabled — this test asserts rendering, not authorisation.
- * {@code EmployeeController} reads the login name straight from the {@link SecurityContextHolder},
- * so a token for the seeded employee is placed in the context for the {@code /employee} render.
+ * <p>The full security filter chain is left <b>enabled</b> and each request is
+ * authenticated with {@code spring-security-test}'s {@code user(...)}, so the
+ * {@code CsrfFilter} populates the {@code _csrf} request attribute the shared
+ * layouts reference in their logout form ({@code ${_csrf.parameterName}}). This
+ * renders the pages exactly as production does, rather than through a stripped
+ * filter chain where {@code _csrf} would be absent.
  */
 @SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 @Transactional
 class ReadSiteTemplatesRenderTest {
 
@@ -69,10 +68,10 @@ class ReadSiteTemplatesRenderTest {
     void setUp() {
         tasksRepository.deleteAll();
 
+        employeeEmail = "ac13.employee+" + System.nanoTime() + "@test.local";
         Employee employee = employeeRepository.save(Employee.builder()
                 .name("Nurse Read").role("Nurse")
-                .email("ac13.employee@test.local").password("x").build());
-        employeeEmail = employee.getEmail();
+                .email(employeeEmail).password("x").build());
 
         Insurance insurance = Insurance.builder()
                 .provider("BlueCross").policyNumber("AB1234567")
@@ -80,7 +79,7 @@ class ReadSiteTemplatesRenderTest {
                 .build();
         Customer customer = customerRepository.save(Customer.builder()
                 .name("Pat Read").age(40).gender("Other")
-                .email("ac13.customer@test.local").medicalHistory("None")
+                .email("ac13.customer+" + System.nanoTime() + "@test.local").medicalHistory("None")
                 .contactDetails("(555) 010-1300").insurance(insurance)
                 .build());
 
@@ -96,23 +95,16 @@ class ReadSiteTemplatesRenderTest {
         tasksRepository.save(task("Due-soon task", customer, employee, dueSoon));
     }
 
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
-
     @Test
     void adminTasksRendersDueDate() throws Exception {
-        authenticateAs("admin@clinic.com", "ROLE_ADMIN");
-        mockMvc.perform(get("/admin/tasks"))
+        mockMvc.perform(get("/admin/tasks").with(user("admin@clinic.com").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(overdueDueDateText)));
     }
 
     @Test
     void adminFollowUpRendersOverdueAndDueSoonDueDates() throws Exception {
-        authenticateAs("admin@clinic.com", "ROLE_ADMIN");
-        String html = mockMvc.perform(get("/admin/follow-up"))
+        String html = mockMvc.perform(get("/admin/follow-up").with(user("admin@clinic.com").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertThat(html)
@@ -122,16 +114,9 @@ class ReadSiteTemplatesRenderTest {
 
     @Test
     void employeeTasksRendersDueDate() throws Exception {
-        authenticateAs(employeeEmail, "ROLE_EMPLOYEE");
-        mockMvc.perform(get("/employee"))
+        mockMvc.perform(get("/employee").with(user(employeeEmail).roles("EMPLOYEE")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(overdueDueDateText)));
-    }
-
-    private void authenticateAs(String email, String role) {
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                email, "n/a", List.of(new SimpleGrantedAuthority(role)));
-        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     private Tasks task(String name, Customer customer, Employee employee, LocalDateTime dueDate) {

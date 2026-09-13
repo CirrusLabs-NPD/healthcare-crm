@@ -1,5 +1,6 @@
 package com.medicare.healthcarecrm.controller.api;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.medicare.healthcarecrm.model.AvailabilityRule;
@@ -93,28 +94,33 @@ class AppointmentApiRoundTripTest {
 
     @Test
     void postValidAppointmentReturns201AndGetRoundTripsStartAndEnd() throws Exception {
-        String startIso = START.toString();
-        String endIso = END.toString();
-
         // POST /api/appointments -> 201 with the persisted start/end echoed back.
         MvcResult created = mockMvc.perform(post("/api/appointments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bookingJson()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNumber())
-                .andExpect(jsonPath("$.startTime").value(startIso))
-                .andExpect(jsonPath("$.endTime").value(endIso))
                 .andReturn();
 
-        long id = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
+        JsonNode createdNode = objectMapper.readTree(created.getResponse().getContentAsString());
+        long id = createdNode.get("id").asLong();
+        assertThat(id).isPositive();
+        // Compare semantically: parse the wire value back to a LocalDateTime so the
+        // assertion holds whatever seconds/fraction form Jackson emits, rather than
+        // pinning a literal string. The instant that comes back must be the one sent.
+        assertThat(LocalDateTime.parse(createdNode.get("startTime").asText())).isEqualTo(START);
+        assertThat(LocalDateTime.parse(createdNode.get("endTime").asText())).isEqualTo(END);
         assertThat(appointmentRepository.findById(id)).isPresent();
 
         // GET /api/appointments/{id} -> the same start/end come back unchanged.
-        mockMvc.perform(get("/api/appointments/{id}", id))
+        MvcResult fetched = mockMvc.perform(get("/api/appointments/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id))
-                .andExpect(jsonPath("$.startTime").value(startIso))
-                .andExpect(jsonPath("$.endTime").value(endIso));
+                .andReturn();
+
+        JsonNode fetchedNode = objectMapper.readTree(fetched.getResponse().getContentAsString());
+        assertThat(LocalDateTime.parse(fetchedNode.get("startTime").asText())).isEqualTo(START);
+        assertThat(LocalDateTime.parse(fetchedNode.get("endTime").asText())).isEqualTo(END);
     }
 
     /**
