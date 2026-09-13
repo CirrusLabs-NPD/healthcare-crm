@@ -1,0 +1,43 @@
+flowchart TB
+    subgraph CI["GitHub Actions — ci.yml (JDK 21, single job)"]
+        direction TB
+        M["mvn -B verify\n(unit + slice tests, incl. AC-2/AC-13/AC-20 backend gaps)"]
+        PKG["mvn -B package -DskipTests\n(build boot jar)"]
+        BOOT["java -jar target/*.jar\n--spring.profiles.active=e2e\n(H2 in-memory, port 8080)"]
+        SEED["E2eDataSeeder (@Profile e2e)\ndeterministic providers, availability rules,\ntime-off exception, appointments, a bookable window"]
+        NPM["npx playwright test\n(Chromium, baseURL http://localhost:8080)"]
+        REPORT["upload playwright-report/ + traces\n(on failure) as CI artifacts"]
+        M --> PKG --> BOOT
+        BOOT --> SEED
+        SEED --> NPM --> REPORT
+    end
+
+    subgraph APP["Spring Boot app under test (e2e profile)"]
+        LOGIN["/login form\nadmin@clinic.com / password123"]
+        CAL["/admin/calendar\nThymeleaf shell + scheduling.js"]
+        API["/api/appointments · /api/availability\n/api/appointment-series (JSON)"]
+        LOGIN --> CAL
+        CAL <--> API
+    end
+
+    subgraph SPECS["Playwright specs — backend/e2e/"]
+        direction TB
+        F["fixtures.ts\nauthenticated 'page' fixture (storageState),\nselector helpers, seed constants"]
+        S1["calendar-views.spec.ts  (AC-3/4)"]
+        S2["provider-filter.spec.ts  (AC-5)"]
+        S3["appointment-block.spec.ts  (AC-6)"]
+        S4["availability.spec.ts  (AC-7/8)"]
+        S5["recurrence.spec.ts  (recurrence editor)"]
+        S6["booking-flow.spec.ts  (book + refusal)"]
+        F --> S1 & S2 & S3 & S4 & S5 & S6
+    end
+
+    NPM -.drives.-> LOGIN
+    SPECS -.assert against.-> APP
+
+    classDef ci fill:#eef4ff,stroke:#4a6fa5;
+    classDef app fill:#eefaf0,stroke:#3a8a5a;
+    classDef spec fill:#fff6e6,stroke:#b5852a;
+    class M,PKG,BOOT,SEED,NPM,REPORT ci;
+    class LOGIN,CAL,API app;
+    class F,S1,S2,S3,S4,S5,S6 spec;
