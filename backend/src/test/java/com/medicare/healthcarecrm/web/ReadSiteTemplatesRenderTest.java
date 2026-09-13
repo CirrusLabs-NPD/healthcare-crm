@@ -20,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -42,11 +43,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * the reference still resolves.
  *
  * <p>The full security filter chain is left <b>enabled</b> and each request is
- * authenticated with {@code spring-security-test}'s {@code user(...)}, so the
- * {@code CsrfFilter} populates the {@code _csrf} request attribute the shared
- * layouts reference in their logout form ({@code ${_csrf.parameterName}}). This
- * renders the pages exactly as production does, rather than through a stripped
- * filter chain where {@code _csrf} would be absent.
+ * authenticated with {@code spring-security-test}'s {@code user(...)} and carries a
+ * token via {@code csrf()}, so the {@code CsrfToken} request attribute the shared
+ * layouts reference in their logout form ({@code ${_csrf.parameterName}}) is present.
+ * Without {@code csrf()}, MockMvc does not populate that attribute and the SpringEL
+ * expression raises a {@code TemplateProcessingException} — which is exactly the
+ * failure this test guards the templates against.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -97,14 +99,14 @@ class ReadSiteTemplatesRenderTest {
 
     @Test
     void adminTasksRendersDueDate() throws Exception {
-        mockMvc.perform(get("/admin/tasks").with(user("admin@clinic.com").roles("ADMIN")))
+        mockMvc.perform(get("/admin/tasks").with(user("admin@clinic.com").roles("ADMIN")).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(overdueDueDateText)));
     }
 
     @Test
     void adminFollowUpRendersOverdueAndDueSoonDueDates() throws Exception {
-        String html = mockMvc.perform(get("/admin/follow-up").with(user("admin@clinic.com").roles("ADMIN")))
+        String html = mockMvc.perform(get("/admin/follow-up").with(user("admin@clinic.com").roles("ADMIN")).with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertThat(html)
@@ -114,7 +116,7 @@ class ReadSiteTemplatesRenderTest {
 
     @Test
     void employeeTasksRendersDueDate() throws Exception {
-        mockMvc.perform(get("/employee").with(user(employeeEmail).roles("EMPLOYEE")))
+        mockMvc.perform(get("/employee").with(user(employeeEmail).roles("EMPLOYEE")).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(overdueDueDateText)));
     }
