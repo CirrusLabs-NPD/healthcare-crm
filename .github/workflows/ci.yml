@@ -34,7 +34,13 @@ jobs:
       # drive the calendar in a real Chromium.
 
       - name: Package the e2e jar
-        run: ./mvnw -B -Pe2e -DskipTests package
+        # clean first: `verify` above already produced target/*.jar with H2
+        # test-scoped (absent from the fat jar). Re-running `package` without
+        # clean leaves that jar in place, so `java -jar` boots the e2e profile
+        # and fails with "Cannot load driver class: org.h2.Driver". Cleaning
+        # forces the fat jar to be rebuilt with the `e2e` profile's runtime-
+        # scoped H2 embedded.
+        run: ./mvnw -B -Pe2e -DskipTests clean package
 
       - name: Set up Node 20
         uses: actions/setup-node@v4
