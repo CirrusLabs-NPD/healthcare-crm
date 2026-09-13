@@ -15,7 +15,7 @@
         <div class="d-flex align-items-center gap-2">
             <label for="providerSelect" class="form-label mb-0 text-nowrap">Provider</label>
             <select id="providerSelect" class="form-select form-select-sm" style="min-width: 200px;"
-                    aria-label="Select provider">
+                    aria-label="Select provider" data-testid="toolbar-provider-select">
                 <option th:if="${#lists.isEmpty(providers)}" value="" disabled selected>
                     No bookable providers
                 </option>
@@ -25,25 +25,25 @@
 
         <div class="d-flex align-items-center gap-1">
             <button type="button" id="btnPrev" class="btn btn-sm btn-outline-primary"
-                    aria-label="Previous period"><i class="bi bi-chevron-left"></i></button>
-            <button type="button" id="btnToday" class="btn btn-sm btn-outline-primary">Today</button>
+                    aria-label="Previous period" data-testid="toolbar-prev"><i class="bi bi-chevron-left"></i></button>
+            <button type="button" id="btnToday" class="btn btn-sm btn-outline-primary" data-testid="toolbar-today">Today</button>
             <button type="button" id="btnNext" class="btn btn-sm btn-outline-primary"
-                    aria-label="Next period"><i class="bi bi-chevron-right"></i></button>
+                    aria-label="Next period" data-testid="toolbar-next"><i class="bi bi-chevron-right"></i></button>
         </div>
 
-        <h1 class="sch-toolbar__title" id="rangeTitle" aria-live="polite">&nbsp;</h1>
+        <h1 class="sch-toolbar__title" id="rangeTitle" aria-live="polite" data-testid="toolbar-range-title">&nbsp;</h1>
 
         <span class="sch-toolbar__spacer"></span>
 
         <div class="sch-viewswitch" role="group" aria-label="View">
-            <button type="button" id="viewDay" aria-pressed="false">Day</button>
-            <button type="button" id="viewWeek" aria-pressed="true">Week</button>
+            <button type="button" id="viewDay" aria-pressed="false" data-testid="toolbar-view-day">Day</button>
+            <button type="button" id="viewWeek" aria-pressed="true" data-testid="toolbar-view-week">Week</button>
         </div>
 
         <button type="button" id="btnManageAvail" class="btn btn-sm btn-outline-primary">
             <i class="bi bi-clock-history me-1"></i> Availability
         </button>
-        <button type="button" id="btnNew" class="btn btn-primary btn-sm">
+        <button type="button" id="btnNew" class="btn btn-primary btn-sm" data-testid="toolbar-new-appointment">
             <i class="bi bi-plus-circle-fill me-1"></i> New appointment
         </button>
     </div>
@@ -96,7 +96,7 @@
     <div class="modal fade" id="apptModal" tabindex="-1" aria-labelledby="apptModalTitle" aria-hidden="true">
       <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-          <form id="apptForm" novalidate>
+          <form id="apptForm" novalidate data-testid="appointment-form">
             <div class="modal-header">
               <h2 class="modal-title h5" id="apptModalTitle">New appointment</h2>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -105,7 +105,7 @@
               <input type="hidden" id="apptId">
 
               <!-- Conflict / validation banner, inline and recoverable -->
-              <div id="apptError" class="alert alert-danger d-none" role="alert">
+              <div id="apptError" class="alert alert-danger d-none" role="alert" data-testid="appointment-error">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <span id="apptErrorText"></span>
               </div>
@@ -129,14 +129,14 @@
               <div class="row g-3">
                 <div class="col-md-6">
                   <label for="apptCustomer" class="form-label">Customer</label>
-                  <select class="form-select" id="apptCustomer" required>
+                  <select class="form-select" id="apptCustomer" required data-testid="field-customer">
                     <option value="" selected disabled>Select a customer…</option>
                     <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.name}">Customer</option>
                   </select>
                 </div>
                 <div class="col-md-6">
                   <label for="apptProvider" class="form-label">Provider</label>
-                  <select class="form-select" id="apptProvider" required>
+                  <select class="form-select" id="apptProvider" required data-testid="field-provider">
                     <option value="" selected disabled>Select a provider…</option>
                     <option th:each="p : ${providers}" th:value="${p.id}" th:text="${p.name}">Provider</option>
                   </select>
@@ -146,11 +146,11 @@
               <div class="row g-3 mt-0">
                 <div class="col-md-6">
                   <label for="apptStart" class="form-label">Starts</label>
-                  <input type="datetime-local" class="form-control" id="apptStart" required>
+                  <input type="datetime-local" class="form-control" id="apptStart" required data-testid="field-start">
                 </div>
                 <div class="col-md-6" data-appt-end-wrap>
                   <label for="apptEnd" class="form-label">Ends</label>
-                  <input type="datetime-local" class="form-control" id="apptEnd" required>
+                  <input type="datetime-local" class="form-control" id="apptEnd" required data-testid="field-end">
                 </div>
               </div>
 
@@ -163,7 +163,7 @@
                 </div>
                 <div class="col-md-6" data-appt-status-wrap>
                   <label for="apptStatus" class="form-label">Status</label>
-                  <select class="form-select" id="apptStatus">
+                  <select class="form-select" id="apptStatus" data-testid="field-status">
                     <option>Pending</option><option>In Progress</option>
                     <option>Completed</option><option>Cancelled</option>
                   </select>
@@ -178,18 +178,18 @@
               <!-- ---- Recurrence (new appointments only) ---- -->
               <div class="border-top pt-3 mt-2" data-recur-toggle-wrap>
                 <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" role="switch" id="apptRepeat">
+                  <input class="form-check-input" type="checkbox" role="switch" id="apptRepeat" data-testid="recurrence-toggle">
                   <label class="form-check-label" for="apptRepeat">
                     <i class="bi bi-arrow-repeat me-1"></i> Repeat this appointment
                   </label>
                 </div>
               </div>
 
-              <div id="recurEditor" class="sch-recur mt-3 d-none">
+              <div id="recurEditor" class="sch-recur mt-3 d-none" data-testid="recurrence-editor">
                 <div class="row g-3">
                   <div class="col-md-5">
                     <label for="recurFreq" class="form-label">Repeats</label>
-                    <select id="recurFreq" class="form-select">
+                    <select id="recurFreq" class="form-select" data-testid="recurrence-frequency">
                       <option value="DAILY">Daily</option>
                       <option value="WEEKLY" selected>Weekly</option>
                       <option value="MONTHLY">Monthly</option>
@@ -207,13 +207,13 @@
                 <div data-recur-weekdays-wrap>
                   <label class="form-label" id="recurDaysLabel">On these days</label>
                   <div class="sch-recur__weekdays" role="group" aria-labelledby="recurDaysLabel">
-                    <button type="button" class="sch-recur__day" data-dow="7" aria-pressed="false" aria-label="Sunday">S</button>
-                    <button type="button" class="sch-recur__day" data-dow="1" aria-pressed="false" aria-label="Monday">M</button>
-                    <button type="button" class="sch-recur__day" data-dow="2" aria-pressed="false" aria-label="Tuesday">T</button>
-                    <button type="button" class="sch-recur__day" data-dow="3" aria-pressed="false" aria-label="Wednesday">W</button>
-                    <button type="button" class="sch-recur__day" data-dow="4" aria-pressed="false" aria-label="Thursday">T</button>
-                    <button type="button" class="sch-recur__day" data-dow="5" aria-pressed="false" aria-label="Friday">F</button>
-                    <button type="button" class="sch-recur__day" data-dow="6" aria-pressed="false" aria-label="Saturday">S</button>
+                    <button type="button" class="sch-recur__day" data-dow="7" aria-pressed="false" aria-label="Sunday" data-testid="recurrence-day-7">S</button>
+                    <button type="button" class="sch-recur__day" data-dow="1" aria-pressed="false" aria-label="Monday" data-testid="recurrence-day-1">M</button>
+                    <button type="button" class="sch-recur__day" data-dow="2" aria-pressed="false" aria-label="Tuesday" data-testid="recurrence-day-2">T</button>
+                    <button type="button" class="sch-recur__day" data-dow="3" aria-pressed="false" aria-label="Wednesday" data-testid="recurrence-day-3">W</button>
+                    <button type="button" class="sch-recur__day" data-dow="4" aria-pressed="false" aria-label="Thursday" data-testid="recurrence-day-4">T</button>
+                    <button type="button" class="sch-recur__day" data-dow="5" aria-pressed="false" aria-label="Friday" data-testid="recurrence-day-5">F</button>
+                    <button type="button" class="sch-recur__day" data-dow="6" aria-pressed="false" aria-label="Saturday" data-testid="recurrence-day-6">S</button>
                   </div>
                 </div>
 
@@ -229,7 +229,7 @@
                   </div>
                   <div class="col-md-4" data-recur-until-wrap>
                     <label for="recurUntil" class="form-label">Until</label>
-                    <input type="date" id="recurUntil" class="form-control">
+                    <input type="date" id="recurUntil" class="form-control" data-testid="recurrence-until">
                   </div>
                   <div class="col-md-4 d-none" data-recur-count-wrap>
                     <label for="recurCount" class="form-label">Occurrences</label>
@@ -245,7 +245,7 @@
 
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-primary" id="apptSave">
+              <button type="submit" class="btn btn-primary" id="apptSave" data-testid="appointment-submit">
                 <span class="spinner-border spinner-border-sm me-1 d-none" id="apptSaveSpin" role="status" aria-hidden="true"></span>
                 Save
               </button>

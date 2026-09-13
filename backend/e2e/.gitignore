@@ -1,0 +1,9 @@
+# Playwright e2e (S-9) — Node artefacts, never committed.
+node_modules/
+# Authenticated session produced by global-setup at run time.
+storageState.json
+# Test output.
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
