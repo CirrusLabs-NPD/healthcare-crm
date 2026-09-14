@@ -38,6 +38,16 @@ never rots. `fixtures.ts` recomputes the same anchor — specs never hard-code a
 Keep the two in lockstep; the exact fixture is documented in
 `design-docs/stories/S-9-e2e-harness-design.md` §2.3.
 
+### Per-test isolation
+
+The whole suite shares **one app boot and one in-memory H2 database**, so an appointment
+a mutating spec creates (a booking, a recurring series) would otherwise leak into a later
+spec that asserts absolute counts. An auto-fixture in `fixtures.ts` calls
+`POST /api/e2e/reset` before every test — `E2eResetController` (`@Profile("e2e")`,
+absent from the production artifact) clears the scheduling tables and re-runs the seeder,
+so every spec starts from the identical baseline and the suite is order-independent. The
+reset carries the saved admin session; `/api/**` is CSRF-exempt.
+
 ## Selectors
 
 Specs address the UI through the additive `data-testid` hooks on `calendar.html` and the

@@ -88,8 +88,25 @@ export function blockRange(a: { start: string; end: string }): string {
 /**
  * Authenticated `page` fixture. Navigates to the calendar and picks a provider
  * by visible name in the toolbar select, returning once the grid has rendered.
+ *
+ * `resetFixture` is an auto-fixture: before every test it restores the seeded
+ * scheduling data to its baseline via POST /api/e2e/reset (E2eResetController,
+ * e2e profile only). The suite shares one app boot and one H2 database, so
+ * without this a booking or series created by one spec would leak into a later
+ * spec that asserts absolute counts. The reset carries the saved admin session
+ * from storageState, so it is authenticated; /api/** is CSRF-exempt.
  */
-export const test = base.extend<{ calendar: CalendarDriver }>({
+export const test = base.extend<{ calendar: CalendarDriver; resetFixture: void }>({
+  resetFixture: [
+    async ({ request }, use) => {
+      const res = await request.post("/api/e2e/reset");
+      if (!res.ok()) {
+        throw new Error(`e2e fixture reset failed: HTTP ${res.status()} ${await res.text()}`);
+      }
+      await use();
+    },
+    { auto: true },
+  ],
   calendar: async ({ page }, use) => {
     await use(new CalendarDriver(page));
   },

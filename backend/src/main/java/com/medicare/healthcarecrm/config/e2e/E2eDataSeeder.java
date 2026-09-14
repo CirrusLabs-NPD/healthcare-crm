@@ -8,6 +8,7 @@ import com.medicare.healthcarecrm.model.Customer;
 import com.medicare.healthcarecrm.model.Employee;
 import com.medicare.healthcarecrm.model.Insurance;
 import com.medicare.healthcarecrm.repository.AppointmentRepository;
+import com.medicare.healthcarecrm.repository.AppointmentSeriesRepository;
 import com.medicare.healthcarecrm.repository.AvailabilityExceptionRepository;
 import com.medicare.healthcarecrm.repository.AvailabilityRuleRepository;
 import com.medicare.healthcarecrm.repository.CustomerRepository;
@@ -68,6 +69,7 @@ public class E2eDataSeeder implements CommandLineRunner {
     private final AvailabilityRuleRepository ruleRepository;
     private final AvailabilityExceptionRepository exceptionRepository;
     private final AppointmentRepository appointmentRepository;
+    private final AppointmentSeriesRepository seriesRepository;
     private final PasswordEncoder passwordEncoder;
 
     private static final String ALICE_EMAIL = "alice.adams@clinic.com";
@@ -77,12 +79,14 @@ public class E2eDataSeeder implements CommandLineRunner {
                          AvailabilityRuleRepository ruleRepository,
                          AvailabilityExceptionRepository exceptionRepository,
                          AppointmentRepository appointmentRepository,
+                         AppointmentSeriesRepository seriesRepository,
                          PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.customerRepository = customerRepository;
         this.ruleRepository = ruleRepository;
         this.exceptionRepository = exceptionRepository;
         this.appointmentRepository = appointmentRepository;
+        this.seriesRepository = seriesRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -100,7 +104,43 @@ public class E2eDataSeeder implements CommandLineRunner {
             log.info("[e2e] Fixture already present — skipping seed.");
             return;
         }
+        seedFixture();
+    }
 
+    /**
+     * Re-establish the deterministic scheduling fixture from a clean slate.
+     *
+     * The browser suite shares one app boot and one H2 database, so an appointment
+     * a mutating spec creates (a booking, a recurring series) would otherwise leak
+     * into later specs that assert absolute counts. {@link com.medicare.healthcarecrm.web.e2e.E2eResetController}
+     * calls this between specs so every test starts from the same baseline; it is
+     * only reachable under the {@code e2e} profile.
+     */
+    @Transactional
+    public void reset() {
+        // Scheduling data only — the users seeded by DataInitializer stay put so the
+        // saved Playwright session (storageState) remains valid across resets.
+        appointmentRepository.deleteAllInBatch();
+        seriesRepository.deleteAllInBatch();
+        exceptionRepository.deleteAllInBatch();
+        ruleRepository.deleteAllInBatch();
+        // Providers and the customer are re-seeded fresh so ids and rows are identical
+        // every run; remove the ones this fixture owns before re-seeding.
+        Employee existing = employeeRepository.findByEmail(ALICE_EMAIL);
+        if (existing != null) {
+            employeeRepository.deleteAll(employeeRepository.findAll().stream()
+                    .filter(e -> e.getEmail() != null && e.getEmail().endsWith("@clinic.com")
+                            && !"admin@clinic.com".equals(e.getEmail()))
+                    .toList());
+            customerRepository.deleteAll(customerRepository.findAll().stream()
+                    .filter(c -> "jordan.client@example.com".equals(c.getEmail()))
+                    .toList());
+        }
+        seedFixture();
+        log.info("[e2e] Fixture reset to baseline.");
+    }
+
+    protected void seedFixture() {
         String pw = passwordEncoder.encode("password123");
 
         Employee alice = employeeRepository.save(Employee.builder()
