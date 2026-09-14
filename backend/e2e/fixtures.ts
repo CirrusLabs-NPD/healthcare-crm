@@ -98,8 +98,10 @@ export function blockRange(a: { start: string; end: string }): string {
  */
 export const test = base.extend<{ calendar: CalendarDriver; resetFixture: void }>({
   resetFixture: [
-    async ({ request }, use) => {
-      const res = await request.post("/api/e2e/reset");
+    async ({ page }, use) => {
+      // Use the page's own request context so the reset unambiguously carries the
+      // authenticated session cookies from storageState.
+      const res = await page.request.post("/api/e2e/reset");
       if (!res.ok()) {
         throw new Error(`e2e fixture reset failed: HTTP ${res.status()} ${await res.text()}`);
       }

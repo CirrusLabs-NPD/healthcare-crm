@@ -73,6 +73,9 @@ public class E2eDataSeeder implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     private static final String ALICE_EMAIL = "alice.adams@clinic.com";
+    private static final String BOB_EMAIL = "bob.barnes@clinic.com";
+    private static final String NORA_EMAIL = "nora.n@clinic.com";
+    private static final String CUSTOMER_EMAIL = "jordan.client@example.com";
 
     public E2eDataSeeder(EmployeeRepository employeeRepository,
                          CustomerRepository customerRepository,
@@ -104,7 +107,8 @@ public class E2eDataSeeder implements CommandLineRunner {
             log.info("[e2e] Fixture already present — skipping seed.");
             return;
         }
-        seedFixture();
+        seedPeople();
+        seedSchedule();
     }
 
     /**
@@ -115,52 +119,62 @@ public class E2eDataSeeder implements CommandLineRunner {
      * into later specs that assert absolute counts. {@link com.medicare.healthcarecrm.web.e2e.E2eResetController}
      * calls this between specs so every test starts from the same baseline; it is
      * only reachable under the {@code e2e} profile.
+     *
+     * <p><b>Only the scheduling rows are reset.</b> Providers and the customer are
+     * left in place and re-used, never deleted: DataInitializer's mock employees
+     * share the {@code @clinic.com} domain and are referenced by mock Tasks, so
+     * touching the Employee table at all risks the tasks-&gt;employee FK and a 500
+     * that fails the whole browser suite. Clearing only appointments, series,
+     * exceptions and rules — then re-seeding the schedule against the existing
+     * people — is order-independent and carries no FK risk.
      */
     @Transactional
     public void reset() {
-        // Scheduling data only — the users seeded by DataInitializer stay put so the
-        // saved Playwright session (storageState) remains valid across resets.
         appointmentRepository.deleteAllInBatch();
         seriesRepository.deleteAllInBatch();
         exceptionRepository.deleteAllInBatch();
         ruleRepository.deleteAllInBatch();
-        // Providers and the customer are re-seeded fresh so ids and rows are identical
-        // every run; remove the ones this fixture owns before re-seeding.
-        Employee existing = employeeRepository.findByEmail(ALICE_EMAIL);
-        if (existing != null) {
-            employeeRepository.deleteAll(employeeRepository.findAll().stream()
-                    .filter(e -> e.getEmail() != null && e.getEmail().endsWith("@clinic.com")
-                            && !"admin@clinic.com".equals(e.getEmail()))
-                    .toList());
-            customerRepository.deleteAll(customerRepository.findAll().stream()
-                    .filter(c -> "jordan.client@example.com".equals(c.getEmail()))
-                    .toList());
+        // Providers/customer were seeded once at boot and are re-used as-is; guard in
+        // case reset() is ever called before run() has seeded them.
+        if (employeeRepository.findByEmail(ALICE_EMAIL) == null) {
+            seedPeople();
         }
-        seedFixture();
+        seedSchedule();
         log.info("[e2e] Fixture reset to baseline.");
     }
 
-    protected void seedFixture() {
+    /** Providers and the customer — seeded once and re-used across resets. */
+    protected void seedPeople() {
         String pw = passwordEncoder.encode("password123");
 
-        Employee alice = employeeRepository.save(Employee.builder()
+        employeeRepository.save(Employee.builder()
                 .name("Dr. Alice Adams").role("Physician").email(ALICE_EMAIL)
                 .password(pw).bookableProvider(true).defaultDurationMin(30).build());
-        Employee bob = employeeRepository.save(Employee.builder()
-                .name("Dr. Bob Barnes").role("Physician").email("bob.barnes@clinic.com")
+        employeeRepository.save(Employee.builder()
+                .name("Dr. Bob Barnes").role("Physician").email(BOB_EMAIL)
                 .password(pw).bookableProvider(true).defaultDurationMin(30).build());
         employeeRepository.save(Employee.builder()
-                .name("Nora Non-Provider").role("Receptionist").email("nora.n@clinic.com")
+                .name("Nora Non-Provider").role("Receptionist").email(NORA_EMAIL)
                 .password(pw).bookableProvider(false).defaultDurationMin(30).build());
 
-        Customer customer = customerRepository.save(Customer.builder()
-                .name("Jordan Client").age(42).gender("Other").email("jordan.client@example.com")
+        customerRepository.save(Customer.builder()
+                .name("Jordan Client").age(42).gender("Other").email(CUSTOMER_EMAIL)
                 .medicalHistory("No significant history.").contactDetails("(555) 010-2020")
                 .insurance(Insurance.builder()
                         .provider("BlueCross").policyNumber("AB1234567")
                         .coverageDetails("Standard group plan.")
                         .expiryDate(LocalDateTime.now().plusYears(2)).build())
                 .build());
+    }
+
+    /** The scheduling rows (rules, time-off, appointments) — cleared and re-seeded on every reset. */
+    protected void seedSchedule() {
+        Employee alice = employeeRepository.findByEmail(ALICE_EMAIL);
+        Employee bob = employeeRepository.findByEmail(BOB_EMAIL);
+        Customer customer = customerRepository.findAll().stream()
+                .filter(c -> CUSTOMER_EMAIL.equals(c.getEmail()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("[e2e] fixture customer missing — seedPeople() did not run"));
 
         // Weekly working hours (AC-7): Alice 09–17, Bob 10–14, Mon–Fri.
         for (DayOfWeek d : new DayOfWeek[]{DayOfWeek.MONDAY, DayOfWeek.TUESDAY,
