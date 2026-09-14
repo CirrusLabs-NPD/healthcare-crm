@@ -55,9 +55,9 @@ export const SEED = {
     return addDays(this.monday, 2);
   },
   appointments: {
-    aliceShort: { title: "Alice — intake", start: "10:00", end: "10:30", status: "Scheduled" },
+    aliceShort: { title: "Alice — intake", start: "10:00", end: "10:30", status: "Pending" },
     aliceLong: { title: "Alice — procedure", start: "14:00", end: "15:30", status: "In Progress" },
-    bob: { title: "Bob — consult", start: "11:00", end: "11:30", status: "Scheduled" },
+    bob: { title: "Bob — consult", start: "11:00", end: "11:30", status: "Pending" },
   },
   /** Guaranteed-free window on the anchor Tuesday for the booking-flow spec. */
   freeWindow: { start: "15:30", end: "16:00" },
@@ -65,6 +65,25 @@ export const SEED = {
 
 /** data-testid selector helper. */
 export const testId = (id: string) => `[data-testid="${id}"]`;
+
+/**
+ * The clock string an appointment block prints, mirroring scheduling.js
+ * `hm()` → `fmtClock()`: 12-hour, lower-case am/pm, minutes omitted on the hour
+ * (e.g. "10:00" → "10am", "10:30" → "10:30am", "15:30" → "3:30pm"). Specs assert
+ * against the format the UI actually renders rather than a reformatted copy of it.
+ */
+export function blockClock(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const ampm = h < 12 ? "am" : "pm";
+  let hr = h % 12;
+  if (hr === 0) hr = 12;
+  return `${hr}${m ? ":" + String(m).padStart(2, "0") : ""}${ampm}`;
+}
+
+/** The "start–end" text a block shows for a seeded appointment (en dash, U+2013). */
+export function blockRange(a: { start: string; end: string }): string {
+  return `${blockClock(a.start)}\u2013${blockClock(a.end)}`;
+}
 
 /**
  * Authenticated `page` fixture. Navigates to the calendar and picks a provider

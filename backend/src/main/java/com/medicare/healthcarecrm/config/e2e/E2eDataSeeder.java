@@ -144,11 +144,11 @@ public class E2eDataSeeder implements CommandLineRunner {
         //  - Alice 14:00–15:30 (90 min): later and 3× the height of the short block.
         //  - Bob   11:00–11:30: proves the provider filter.
         appointmentRepository.save(appointment(customer, alice, "Alice — intake",
-                tuesday.atTime(10, 0), tuesday.atTime(10, 30), "Scheduled"));
+                tuesday.atTime(10, 0), tuesday.atTime(10, 30), "Pending"));
         appointmentRepository.save(appointment(customer, alice, "Alice — procedure",
                 tuesday.atTime(14, 0), tuesday.atTime(15, 30), "In Progress"));
         appointmentRepository.save(appointment(customer, bob, "Bob — consult",
-                tuesday.atTime(11, 0), tuesday.atTime(11, 30), "Scheduled"));
+                tuesday.atTime(11, 0), tuesday.atTime(11, 30), "Pending"));
         // Alice's Tuesday 15:30–17:00 window is intentionally left free for the
         // booking-flow spec to book into.
 

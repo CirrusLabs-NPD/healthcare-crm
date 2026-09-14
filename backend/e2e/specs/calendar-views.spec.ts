@@ -1,4 +1,4 @@
-import { test, expect, testId, PROVIDERS, SEED, ymd, addDays } from "../fixtures";
+import { test, expect, testId, PROVIDERS, SEED, ymd, addDays, blockRange } from "../fixtures";
 
 /**
  * AC-3 / AC-4 — day and week views render seeded appointments on the correct
@@ -36,9 +36,7 @@ test.describe("AC-3/4 — calendar day & week views", () => {
     await expect(tuesday.locator(testId("appointment-block"), { hasText: SEED.appointments.aliceLong.title })).toHaveCount(1);
     await expect(tuesday).toContainText(SEED.appointments.aliceShort.title);
     await expect(tuesday).toContainText(SEED.appointments.aliceLong.title);
-    await expect(tuesday).toContainText(
-      `${SEED.appointments.aliceShort.start}–${SEED.appointments.aliceShort.end}`,
-    );
+    await expect(tuesday).toContainText(blockRange(SEED.appointments.aliceShort));
 
     // No appointment leaks into an adjacent day (Monday / Wednesday are empty).
     await expect(calendar.dayColumn(SEED.monday).locator(testId("appointment-block"))).toHaveCount(0);

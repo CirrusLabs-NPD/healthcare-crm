@@ -1,4 +1,4 @@
-import { test, expect, testId, PROVIDERS, CUSTOMER, SEED } from "../fixtures";
+import { test, expect, testId, PROVIDERS, CUSTOMER, SEED, blockRange } from "../fixtures";
 
 /**
  * Booking flow — an admin books an appointment through the UI and it appears on
@@ -46,7 +46,7 @@ test.describe("booking flow", () => {
     await expect(page.locator(testId("appointment-form"))).toBeHidden();
     const tuesday = calendar.dayColumn(SEED.tuesday);
     await expect(tuesday.locator(testId("appointment-block"), { hasText: title })).toHaveCount(1);
-    await expect(tuesday.locator(testId("appointment-block"), { hasText: title })).toContainText("15:30–16:00");
+    await expect(tuesday.locator(testId("appointment-block"), { hasText: title })).toContainText(blockRange(SEED.freeWindow));
   });
 
   test("an overlapping booking is refused with a visible message and creates nothing", async ({ page, calendar }) => {

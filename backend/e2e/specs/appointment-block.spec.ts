@@ -1,4 +1,4 @@
-import { test, expect, testId, PROVIDERS, CUSTOMER, SEED } from "../fixtures";
+import { test, expect, testId, PROVIDERS, CUSTOMER, SEED, blockRange } from "../fixtures";
 
 /**
  * AC-6 — an appointment block shows its time and status and links to its edit
@@ -22,10 +22,8 @@ test.describe("AC-6 — appointment block details & edit link", () => {
     const tuesday = calendar.dayColumn(SEED.tuesday);
     const short = tuesday.locator(testId("appointment-block"), { hasText: SEED.appointments.aliceShort.title });
 
-    // Time is printed on the block.
-    await expect(short).toContainText(
-      `${SEED.appointments.aliceShort.start}–${SEED.appointments.aliceShort.end}`,
-    );
+    // Time is printed on the block, in the 12-hour clock format the UI renders.
+    await expect(short).toContainText(blockRange(SEED.appointments.aliceShort));
     // Status is carried as data-status (drives the colour) and in the aria-label.
     await expect(short).toHaveAttribute("data-status", SEED.appointments.aliceShort.status);
     const aria = await short.getAttribute("aria-label");
@@ -37,8 +35,8 @@ test.describe("AC-6 — appointment block details & edit link", () => {
     const tuesday = calendar.dayColumn(SEED.tuesday);
     const short = tuesday.locator(testId("appointment-block"), { hasText: SEED.appointments.aliceShort.title });
     const long = tuesday.locator(testId("appointment-block"), { hasText: SEED.appointments.aliceLong.title });
-    await expect(short).toHaveAttribute("data-status", "Scheduled");
-    await expect(long).toHaveAttribute("data-status", "In Progress");
+    await expect(short).toHaveAttribute("data-status", SEED.appointments.aliceShort.status);
+    await expect(long).toHaveAttribute("data-status", SEED.appointments.aliceLong.status);
   });
 
   test("clicking a block links to its edit form with customer/provider/time/status", async ({ page, calendar }) => {
