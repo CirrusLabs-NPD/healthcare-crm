@@ -28,6 +28,11 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<!-- H2 is test-scoped by default so it never enters the production artifact.
+		     The `e2e` Maven profile flips this to `runtime` so the packaged jar the
+		     Playwright suite boots (on the `e2e` Spring profile) carries the driver.
+		     See design-docs/stories/S-9-e2e-harness-design.md §2.2. -->
+		<h2.scope>test</h2.scope>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -94,13 +99,18 @@
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-			<scope>test</scope>
+			<scope>${h2.scope}</scope>
 		</dependency>
 <!--		<dependency>-->
 <!--			<groupId>org.springframework.security</groupId>-->
 <!--			<artifactId>spring-security-test</artifactId>-->
 <!--			<scope>test</scope>-->
 <!--		</dependency>-->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>nz.net.ultraq.thymeleaf</groupId>
@@ -136,5 +146,19 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<!-- e2e: builds the jar the Playwright browser suite boots. Promotes the H2
+		     driver from test to runtime scope so `java -jar` can start on the `e2e`
+		     Spring profile's in-memory database. The default build leaves H2
+		     test-scoped, so the production artifact never carries it.
+		     Used by CI as: ./mvnw -Pe2e -DskipTests package -->
+		<profile>
+			<id>e2e</id>
+			<properties>
+				<h2.scope>runtime</h2.scope>
+			</properties>
+		</profile>
+	</profiles>
 
 </project>

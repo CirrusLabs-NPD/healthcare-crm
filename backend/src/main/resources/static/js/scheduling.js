@@ -185,6 +185,8 @@
     var days = state.view === "day" ? 1 : 7;
     var grid = document.createElement("div");
     grid.className = "sch-grid " + (state.view === "day" ? "sch-grid--day" : "sch-grid--week");
+    grid.setAttribute("data-testid", "calendar-grid");
+    grid.setAttribute("data-view", state.view);
 
     // corner + day headers
     grid.appendChild(cell("sch-grid__corner"));
@@ -211,6 +213,8 @@
     for (var c = 0; c < days; c++) {
       var colDate = addDays(from, c);
       var col = cell("sch-grid__col");
+      col.setAttribute("data-testid", "calendar-day-column");
+      col.setAttribute("data-date", ymd(colDate));
       col.style.position = "relative";
       if (sameDay(colDate, today)) col.classList.add("is-today");
 
@@ -273,6 +277,9 @@
       var ev = document.createElement("button");
       ev.type = "button";
       ev.className = "sch-event " + statusClass(a.status);
+      ev.setAttribute("data-testid", "appointment-block");
+      ev.setAttribute("data-appointment-id", String(a.id));
+      ev.setAttribute("data-status", a.status || "");
       ev.style.top = top + "px";
       ev.style.height = h + "px";
       ev.setAttribute("aria-label", eventAria(a));
@@ -755,6 +762,9 @@
     d.style.top = top + "px";
     d.style.height = Math.max(0, height) + "px";
     d.setAttribute("aria-hidden", "true");
+    d.setAttribute("data-testid", "availability-band");
+    d.setAttribute("data-kind",
+      cls === "sch-avail" ? "available" : cls === "sch-exception" ? "exception" : "unavailable");
     return d;
   }
   function esc(s) {

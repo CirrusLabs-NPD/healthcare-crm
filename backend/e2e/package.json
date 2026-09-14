@@ -1,0 +1,17 @@
+{
+  "name": "healthcarecrm-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Playwright (Chromium) browser e2e suite for the scheduling calendar and booking flow (S-9). Self-contained Node project — Maven never sees it.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "typecheck": "tsc --noEmit",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  }
+}
