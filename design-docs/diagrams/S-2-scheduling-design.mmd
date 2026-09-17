@@ -1,0 +1,57 @@
+erDiagram
+    EMPLOYEE ||--o{ APPOINTMENT : "provider (bookable)"
+    CUSTOMER ||--o{ APPOINTMENT : "attends"
+    EMPLOYEE ||--o{ AVAILABILITY_RULE : "weekly hours"
+    EMPLOYEE ||--o{ AVAILABILITY_EXCEPTION : "time off / extra"
+    APPOINTMENT_SERIES ||--o{ APPOINTMENT : "generates"
+    EMPLOYEE ||--o{ APPOINTMENT_SERIES : "provider"
+
+    EMPLOYEE {
+        Long id PK
+        String name
+        String role
+        boolean bookableProvider "NEW: is this employee a provider"
+        int defaultDurationMin "NEW: default slot length"
+    }
+    APPOINTMENT {
+        Long id PK
+        Long provider_id FK "was tasks.employee_details"
+        Long customer_id FK "was tasks.customer_details"
+        String title "was taskName"
+        AppointmentType type "APPOINTMENT | DEADLINE (migrated)"
+        LocalDateTime startTime "replaces dueDate"
+        LocalDateTime endTime "start + duration"
+        String priority
+        String description
+        String status
+        Long series_id FK "nullable, links to series"
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    AVAILABILITY_RULE {
+        Long id PK
+        Long provider_id FK
+        DayOfWeek dayOfWeek "MON..SUN"
+        LocalTime startTime "e.g. 09:00"
+        LocalTime endTime "e.g. 17:00"
+    }
+    AVAILABILITY_EXCEPTION {
+        Long id PK
+        Long provider_id FK
+        LocalDate date
+        boolean available "false=time off, true=extra hours"
+        LocalTime startTime "null if whole-day off"
+        LocalTime endTime
+    }
+    APPOINTMENT_SERIES {
+        Long id PK
+        Long provider_id FK
+        Long customer_id FK
+        RecurrenceFreq freq "DAILY | WEEKLY | MONTHLY"
+        int intervalCount "every N"
+        String byDay "MO,TU,WE for WEEKLY"
+        LocalDate untilDate "end condition A"
+        Integer occurrenceCount "end condition B"
+        LocalTime startTime
+        int durationMin
+    }
