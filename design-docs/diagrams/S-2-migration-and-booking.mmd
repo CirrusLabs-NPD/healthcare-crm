@@ -1,0 +1,43 @@
+flowchart TD
+    subgraph Phase1["Phase 1 — Additive (zero downtime)"]
+        A1["Add Appointment entity + table<br/>ddl-auto=update creates it"]
+        A2["Add AvailabilityRule / Exception<br/>+ AppointmentSeries tables"]
+        A3["Add Employee.bookableProvider<br/>(default true) + defaultDurationMin"]
+        A1 --> A2 --> A3
+    end
+
+    subgraph Phase2["Phase 2 — Backfill (one-off, idempotent)"]
+        B1["Migration runner reads every Tasks row"]
+        B2{"dueDate present?"}
+        B3["type=DEADLINE<br/>start=dueDate, end=dueDate"]
+        B4["type=DEADLINE<br/>start=null (unscheduled)"]
+        B5["Copy taskName, priority,<br/>employee, customer, status"]
+        B1 --> B2
+        B2 -- yes --> B3 --> B5
+        B2 -- no --> B4 --> B5
+    end
+
+    subgraph Phase3["Phase 3 — Cutover"]
+        C1["Controllers + templates read Appointment"]
+        C2["Follow-Up Center queries<br/>Appointment.startTime"]
+        C3["Tasks table retired<br/>(kept read-only 1 release, then dropped)"]
+        C1 --> C2 --> C3
+    end
+
+    Phase1 --> Phase2 --> Phase3
+
+    subgraph Booking["Booking guard (web AND api, in service layer)"]
+        G1["New / moved appointment"]
+        G2{"Within an<br/>AvailabilityRule<br/>for that weekday?"}
+        G3{"Blocked by an<br/>AvailabilityException?"}
+        G4{"Overlaps an existing<br/>appointment for<br/>same provider?"}
+        G5["Persist"]
+        G6["Reject 409 +<br/>reason"]
+        G1 --> G2
+        G2 -- no --> G6
+        G2 -- yes --> G3
+        G3 -- blocked --> G6
+        G3 -- ok --> G4
+        G4 -- yes --> G6
+        G4 -- no --> G5
+    end
